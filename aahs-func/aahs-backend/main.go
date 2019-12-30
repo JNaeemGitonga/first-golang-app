@@ -37,9 +37,6 @@ var (
 	// mongoURI uri string for MongoDB
 	mongoURI string
 
-	// err is an error
-	err error
-
 	// collection global variable for collection --> if we were using multiple collections this would need to be scoped to the function executing a CRUD operation
 	collection *mongo.Collection
 
@@ -119,14 +116,15 @@ func connectToMongoDB() {
 	if client != nil {
 		return
 	}
-
+	var connectionError error
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	client, err = mongo.Connect(ctx, options.Client().ApplyURI(mongoURI))
+	client, connectionError = mongo.Connect(ctx, options.Client().ApplyURI(mongoURI))
+	fmt.Printf("%+v", client)
 	collection = client.Database(dbName).Collection(col) // <--- since I'm only using one collection this can be global
 	defer cancel()
 
-	if err != nil {
-		fmt.Printf("this is an eror %+v", err)
+	if connectionError != nil {
+		fmt.Printf("this is an eror %+v", connectionError)
 	}
 }
 
@@ -146,7 +144,7 @@ func getMongoURIEnvVar(varName string) {
 }
 
 func getStories(ctx context.Context) (events.APIGatewayProxyResponse, error) {
-	err = client.Ping(ctx, readpref.Primary())
+	err := client.Ping(ctx, readpref.Primary())
 	if err != nil {
 		return handleError(err)
 	}
@@ -216,7 +214,7 @@ func marshalJSONAndSend(res []Story) (events.APIGatewayProxyResponse, error) {
 }
 
 func postStory(ctx context.Context, story string) (events.APIGatewayProxyResponse, error) {
-	err = client.Ping(ctx, readpref.Primary())
+	err := client.Ping(ctx, readpref.Primary())
 	if err != nil {
 		return handleError(err)
 	}
